@@ -1,5 +1,8 @@
 #define ERRO -1
 
+PFILA2 aptos;
+PFILA2 bloqueados;
+PFILA2 executando;
 
 int cidentify (char *name, int size){
   return ERRO;
