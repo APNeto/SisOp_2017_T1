@@ -14,6 +14,10 @@ int iniciaThreads(){
   CreateFila2(bloqueados);
   CreateFila2(executando);
   
+  TCB_t* tcbmain = (TCB_t*) malloc(sizeof(TCB_t));
+  tcbmain.tid = 0;
+  tcbmaind.state = PROCST_EXEC;
+  //tcbmain.context
   
   return ERRO;
 }
