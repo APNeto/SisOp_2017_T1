@@ -8,7 +8,20 @@ int cidentify (char *name, int size){
   return ERRO;
 }
 
+
+int iniciaThreads(){
+  CreateFila2(aptos);
+  CreateFila2(bloqueados);
+  CreateFila2(executando);
+  
+  
+  return ERRO;
+}
+
 int ccreate (void* (*start)(void*), void *arg, int prio) {
+  if(!FirstFila2(executando)) { //caso ainda nao tenha sido criada fila de executando, criar filas e iniciar thread main
+    iniciaThreads();
+  } 
   return ERRO;
 }
 
