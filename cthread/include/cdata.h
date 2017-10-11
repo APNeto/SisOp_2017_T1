@@ -1,9 +1,9 @@
 /*
- * cdata.h: arquivo de inclus„o de uso apenas na geraÁ„o da libpithread
+ * cdata.h: arquivo de inclus√£o de uso apenas na gera√ß√£o da libpithread
  *
  * Esse arquivo pode ser modificado. ENTRETANTO, deve ser utilizada a TCB fornecida
  *
- * Vers„o de 11/09/2017
+ * Vers√£o de 11/09/2017
  *
  */
 #ifndef __cdata__
@@ -17,16 +17,18 @@
 #define	PROCST_TERMINO	4
 
 /* Os campos "tid", "state", "prio" e "context" dessa estrutura devem ser mantidos e usados convenientemente
-   Pode-se acrescentar outros campos AP”S os campos obrigatÛrios dessa estrutura
+   Pode-se acrescentar outros campos AP√ìS os campos obrigat√≥rios dessa estrutura
 */
 typedef struct s_TCB { 
 	int		tid; 		// identificador da thread
 	int		state;		// estado em que a thread se encontra
-					// 0: CriaÁ„o; 1: Apto; 2: ExecuÁ„o; 3: Bloqueado e 4: TÈrmino
+					// 0: Cria√ß√£o; 1: Apto; 2: Execu√ß√£o; 3: Bloqueado e 4: T√©rmino
 	unsigned 	int		prio;		// prioridade da thread (higest=0; lowest=3)
-	ucontext_t 	context;	// contexto de execuÁ„o da thread (SP, PC, GPRs e recursos) 
+	ucontext_t 	context;	// contexto de execu√ß√£o da thread (SP, PC, GPRs e recursos) 
 	
-	/* Se necess·rio, pode-se acresecentar campos nessa estrutura A PARTIR DAQUI! */
+	/* Se necess√°rio, pode-se acresecentar campos nessa estrutura A PARTIR DAQUI! */
+	
+	struct s_TCB *bloqueando;	// ponteiro para thread que espera (join) esta
 	
 	
 } TCB_t; 
