@@ -4,6 +4,7 @@
 PFILA2 aptos;
 PFILA2 bloqueados;
 PFILA2 executando;
+PFILA2 esperando;
 int numT = 0;
 
 int cidentify (char *name, int size){
@@ -11,10 +12,31 @@ int cidentify (char *name, int size){
 }
 
 
+/*
+  TCB_t* check_tid_apto(int tid){
+
+    TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
+    if(!FisrtFila2(aptos)) ;
+    
+    do{
+      tcb = GetAtIteratorFila2(aptos);
+      if(tcb->tid == tid) return tcb;
+    while( !(NextFila2(aptos)) );
+
+    return NULL;
+  }
+*/
+
+/*
+  TCB_t* dispatcher(){
+    
+  }
+*/
 int iniciaThreads(){
   CreateFila2(aptos);
   CreateFila2(bloqueados);
   CreateFila2(executando);
+  CreateFila2(esperando);
   
   TCB_t* tcbmain = (TCB_t*) malloc(sizeof(TCB_t));
   tcbmain->tid = numT++;
@@ -38,11 +60,12 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
   TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
   tcb->tid = numT++;
   tcb->state = PROCST_EXEC;
-  tcb->context.uc_link = NULL;
+  tcb->context.uc_link = dispatcher;
   tcb->context.uc_stack.ss_sp = malloc(SIGSTKSZ);
   tcb->context.uc_stack.size = SIGSTKSZ;
+  tcb->prio = 0;
   getcontext(&(tcb->context));
-
+  makecontext(&(tcb->context), (void(*)(void)) start, 1, arg);
   AppendFila2(aptos, tcb);
 
   return tcb->tid;
@@ -51,11 +74,24 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 }
 
 int cyield(void){
+  TCB_t *thread = GetAtIteratorFila2(executando);
+  thread->state = PROCST_APTO;
+
+  //AppendFila2(aptos, thread);
+  //dispatcher();
+
   return ERRO;
 }
 int cjoin(int tid){
+  TCB_t *thread = (TCB_t*) GetAtIteratorFila2(executando);
+  //check se tid em aptos ou em esperando
+  //se em bloqueados, check se thread_de_tid está com join em thread
+
+  //check se thread_de_tid ja eh esperada por outra thread
+  //swapcontext(&(), &());
   return ERRO;
 }
+
 int csem_init(csem_t *sem, int count){
   return ERRO;
 }
