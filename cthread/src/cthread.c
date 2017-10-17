@@ -1,14 +1,24 @@
+
+#include "../include/support.h"
+#include "../include/cdata.h"
+#include <stdlib.h>
 #define ERRO -1
 #define SUCESSO 1
+
+
 
 PFILA2 aptos;
 PFILA2 bloqueados;
 PFILA2 executando;
 PFILA2 esperando;
-int numT = 0;
+int numT = 1;
+int filascriadas = 0;
+ucontext_t escalonador;
+TCB_t thread_main;
+
 
 int cidentify (char *name, int size){
-  return ERRO;T
+  return ERRO;
 }
 
 
@@ -17,7 +27,7 @@ int cidentify (char *name, int size){
 
     TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
     if(!FisrtFila2(aptos)) ;
-    
+
     do{
       tcb = GetAtIteratorFila2(aptos);
       if(tcb->tid == tid) return tcb;
@@ -29,48 +39,69 @@ int cidentify (char *name, int size){
 
 /*
   TCB_t* dispatcher(){
-    
+
   }
 */
-int iniciaThreads(){
+
+void CriaFilas(){
   CreateFila2(aptos);
   CreateFila2(bloqueados);
   CreateFila2(executando);
   CreateFila2(esperando);
-  
-  TCB_t* tcbmain = (TCB_t*) malloc(sizeof(TCB_t));
-  tcbmain->tid = numT++;
-  tcbmaind->state = PROCST_EXEC;
-  tcbmain->context.uc_link = NULL;
-  tcbmain->context.uc_stack.ss_sp = malloc(SIGSTKSZ);
-  tcbmain->context.uc_stack.size = SIGSTKSZ;
-
-  AppendFila2(executando, tcbmain);
-  getcontext(&(tcbmain->context));
-  
-  return SUCESSO;
+  filascriadas = 1;
 }
 
-int ccreate (void* (*start)(void*), void *arg, int prio) {
-  if(!FirstFila2(executando)) { //caso ainda nao tenha sido criada fila de executando, criar filas e iniciar thread main
-    iniciaThreads();
-  }
+void Create_Main_Thread()
+{
+    thread_main.tid = 0;
+    thread_main.state = PROCST_EXEC;
+    getcontext(&thread_main.context);
+}
 
-  // Cadastra nova thread de start
+void InicializaVariavies()
+{
+    Create_Main_Thread();
+    CriaFilas();
+}
+
+//int iniciaThreads(){
+//  CreateFila2(aptos);
+//  CreateFila2(bloqueados);
+//  CreateFila2(executando);
+//  CreateFila2(esperando);
+
+//  TCB_t* tcbmain = (TCB_t*) malloc(sizeof(TCB_t));
+//  tcbmain->tid = numT++;
+//  tcbmaind->state = PROCST_EXEC;
+//  tcbmain->context.uc_link = NULL;
+//  tcbmain->context.uc_stack.ss_sp = malloc(SIGSTKSZ);
+//  tcbmain->context.uc_stack.size = SIGSTKSZ;
+
+//  AppendFila2(executando, tcbmain);
+//  getcontext(&(tcbmain->context));
+//  TCB_t
+//  return SUCESSO;
+//}
+
+int ccreate (void* (*start)(void*), void *arg, int prio) {
+
+  // Crias as listas e a thread de start
+  if(!filascriadas){
+	InicializaVariavies();
+	}
+
+  // Cria uma nova thread
   TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
   tcb->tid = numT++;
-  tcb->state = PROCST_EXEC;
-  tcb->context.uc_link = dispatcher;
+  tcb->state = PROCST_APTO;
+  tcb->context.uc_link = &escalonador;
   tcb->context.uc_stack.ss_sp = malloc(SIGSTKSZ);
-  tcb->context.uc_stack.size = SIGSTKSZ;
+  tcb->context.uc_stack.ss_size = SIGSTKSZ;
   tcb->prio = 0;
   getcontext(&(tcb->context));
   makecontext(&(tcb->context), (void(*)(void)) start, 1, arg);
   AppendFila2(aptos, tcb);
-
   return tcb->tid;
-
-  return ERRO;
 }
 
 int cyield(void){
@@ -92,12 +123,12 @@ int cjoin(int tid){
   return ERRO;
 }
 
-int csem_init(csem_t *sem, int count){
-  return ERRO;
-}
-int cwait(csem_t *sem){
-  return ERRO;
-}
-int csignal(csem_t *sem){
-  return ERRO;
-}
+//int csem_init(csem_t *sem, int count){
+//  return ERRO;
+//}
+//int cwait(csem_t *sem){
+//  return ERRO;
+//}
+//int csignal(csem_t *sem){
+//  return ERRO;
+//}
