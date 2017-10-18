@@ -64,6 +64,42 @@ void InicializaVariavies()
     CriaFilas();
 }
 
+TCB_t* check_tid_apto(int tid){
+    TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
+    if(!FisrtFila2(aptos)) ;
+    
+    do{
+      tcb = GetAtIteratorFila2(aptos);
+      if(tcb->tid == tid) return tcb;
+    while( !(NextFila2(aptos)) );
+
+    return NULL;
+}
+
+TCB_t* check_tid_esperando(int tid){
+    TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
+    if(!FisrtFila2(esperando)) ;
+    
+    do{
+      tcb = GetAtIteratorFila2(esperando);
+      if(tcb->tid == tid) return tcb;
+    while( !(NextFila2(esperando)) );
+
+    return NULL;
+}
+
+TCB_t* check_tid_bloqueados(int tid){
+    TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
+    if(!FisrtFila2(bloqueados)) ;
+    
+    do{
+      tcb = GetAtIteratorFila2(bloqueados);
+      if(tcb->tid == tid) return tcb;
+    while( !(NextFila2(bloqueados)) );
+
+    return NULL;
+}
+
 //int iniciaThreads(){
 //  CreateFila2(aptos);
 //  CreateFila2(bloqueados);
@@ -115,11 +151,28 @@ int cyield(void){
 }
 int cjoin(int tid){
   TCB_t *thread = (TCB_t*) GetAtIteratorFila2(executando);
-  //check se tid em aptos ou em esperando
-  //se em bloqueados, check se thread_de_tid está com join em thread
-
+  
   //check se thread_de_tid ja eh esperada por outra thread
-  //swapcontext(&(), &());
+  if(check_tid_bloqueados(executando->tid)) return ERRO;
+
+
+  TCB_t *tidThread = check_tid_apto(tid);
+  //check se tid em aptos
+  if(tidThread){
+    executando->bloqueando = tidThread;
+    executando->state = PROCST_BLOQ;
+    //
+  }
+  
+  //check se tid em esperando
+  tidThread = = check_tid_esperando(tid);
+  if(tidThread){}
+
+  //se em bloqueados, check se thread_de_tid está com join em thread
+  TCB_t *tidThread = check_tid_bloqueados(tid);
+  if(tidThread){
+    if(tidThread->bloqueando->tid == executando->tid) return ERRO;
+  }
   return ERRO;
 }
 
