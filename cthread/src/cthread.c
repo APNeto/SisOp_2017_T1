@@ -21,22 +21,6 @@ int cidentify (char *name, int size){
   return ERRO;
 }
 
-
-/*
-  TCB_t* check_tid_apto(int tid){
-
-    TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
-    if(!FisrtFila2(aptos)) ;
-
-    do{
-      tcb = GetAtIteratorFila2(aptos);
-      if(tcb->tid == tid) return tcb;
-    while( !(NextFila2(aptos)) );
-
-    return NULL;
-  }
-*/
-
 /*
   TCB_t* dispatcher(){
 
