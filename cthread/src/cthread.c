@@ -145,17 +145,26 @@ int cjoin(int tid){
   if(tidThread){
     executando->bloqueando = tidThread;
     executando->state = PROCST_BLOQ;
+    //AppendFila2(bloqueados, executando);
     //
   }
   
   //check se tid em esperando
   tidThread = = check_tid_esperando(tid);
-  if(tidThread){}
+  if(tidThread){
+    executando->bloqueando = tidThread;
+    executando->state = PROCST_BLOQ;
+    //AppendFila2(bloqueados, executando);
+  }
 
   //se em bloqueados, check se thread_de_tid está com join em thread
   TCB_t *tidThread = check_tid_bloqueados(tid);
   if(tidThread){
     if(tidThread->bloqueando->tid == executando->tid) return ERRO;
+	  
+    executando->bloqueando = tidThread;
+    executando->state = PROCST_BLOQ;
+    //AppendFila2(bloqueados, executando);
   }
   return ERRO;
 }
