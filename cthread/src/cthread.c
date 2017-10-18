@@ -84,6 +84,17 @@ TCB_t* check_tid_bloqueados(int tid){
     return NULL;
 }
 
+void finalizer(){
+    // se ha alguma thread esperando esta que termina, libera a thread para aptos
+    if(executando->bloqueando){
+	//acha ponteiro na fila de bloqueados
+	//deleta ponteiro na fila de bloqueados
+	//coloca thread em aptos
+        ///TCB_t* tcb = executando->bloqueando;
+	///tcb->PROCST_APTO;
+	///tcb
+    }
+}
 //int iniciaThreads(){
 //  CreateFila2(aptos);
 //  CreateFila2(bloqueados);
@@ -136,13 +147,13 @@ int cyield(void){
 int cjoin(int tid){
   TCB_t *thread = (TCB_t*) GetAtIteratorFila2(executando);
   
-  //check se thread_de_tid ja eh esperada por outra thread
-  if(check_tid_bloqueados(executando->tid)) return ERRO;
-
-
+  
   TCB_t *tidThread = check_tid_apto(tid);
   //check se tid em aptos
   if(tidThread){
+    //check se thread_de_tid ja eh esperada por outra thread
+    if(tidThread->bloqueando) return ERRO;
+
     executando->bloqueando = tidThread;
     executando->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
@@ -152,6 +163,9 @@ int cjoin(int tid){
   //check se tid em esperando
   tidThread = = check_tid_esperando(tid);
   if(tidThread){
+    //check se thread_de_tid ja eh esperada por outra thread
+    if(tidThread->bloqueando) return ERRO;
+	  
     executando->bloqueando = tidThread;
     executando->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
@@ -161,6 +175,9 @@ int cjoin(int tid){
   TCB_t *tidThread = check_tid_bloqueados(tid);
   if(tidThread){
     if(tidThread->bloqueando->tid == executando->tid) return ERRO;
+
+    //check se thread_de_tid ja eh esperada por outra thread
+    if(tidThread->bloqueando) return ERRO;
 	  
     executando->bloqueando = tidThread;
     executando->state = PROCST_BLOQ;
