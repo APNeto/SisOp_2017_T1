@@ -140,7 +140,8 @@ int cyield(void){
   thread->state = PROCST_APTO;
 
   //AppendFila2(aptos, thread);
-  //dispatcher();
+  //DeleteAtIteratorFila2(executando);
+  //escalonador();
 
   return ERRO;
 }
@@ -158,6 +159,7 @@ int cjoin(int tid){
     executando->bloqueando = tidThread;
     executando->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
+    //DeleteAtIteratorFila2(executando);
     escalonador();
     return SUCESSO;
   }
@@ -171,6 +173,7 @@ int cjoin(int tid){
     executando->bloqueando = tidThread;
     executando->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
+    //DeleteAtIteratorFila2(executando);
     escalonador();
     return SUCESSO;
   }
@@ -193,9 +196,14 @@ int cjoin(int tid){
   return ERRO;
 }
 
-//int csem_init(csem_t *sem, int count){
-//  return ERRO;
-//}
+//csem_t semaforos;
+int csem_init(csem_t *sem, int count){
+    sem = (csem_t*) malloc (sizeof(csem_t));
+    sem->count = 1;
+    CreateFila2(sem->fila);
+    if(sem->fila) return SUCESSO;
+    return ERRO; //caso fila nao tenha sido alocada corretamente
+}
 //int cwait(csem_t *sem){
 //  return ERRO;
 //}
