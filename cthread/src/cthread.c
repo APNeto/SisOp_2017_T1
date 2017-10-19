@@ -3,7 +3,7 @@
 #include "../include/cdata.h"
 #include <stdlib.h>
 #define ERRO -1
-#define SUCESSO 1
+#define SUCESSO 0
 
 
 
@@ -144,6 +144,7 @@ int cyield(void){
 
   return ERRO;
 }
+
 int cjoin(int tid){
   TCB_t *thread = (TCB_t*) GetAtIteratorFila2(executando);
   
@@ -157,11 +158,12 @@ int cjoin(int tid){
     executando->bloqueando = tidThread;
     executando->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
-    //
+    escalonador();
+    return SUCESSO;
   }
   
   //check se tid em esperando
-  tidThread = = check_tid_esperando(tid);
+  tidThread = check_tid_esperando(tid);
   if(tidThread){
     //check se thread_de_tid ja eh esperada por outra thread
     if(tidThread->bloqueando) return ERRO;
@@ -169,6 +171,8 @@ int cjoin(int tid){
     executando->bloqueando = tidThread;
     executando->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
+    escalonador();
+    return SUCESSO;
   }
 
   //se em bloqueados, check se thread_de_tid está com join em thread
@@ -182,7 +186,10 @@ int cjoin(int tid){
     executando->bloqueando = tidThread;
     executando->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
+    escalonador();
+    return SUCESSO;
   }
+  //caso nao encontre tid, a thread ja finalizou
   return ERRO;
 }
 
