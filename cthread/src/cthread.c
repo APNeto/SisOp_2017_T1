@@ -23,7 +23,10 @@ int cidentify (char *name, int size){
 
 /*
   TCB_t* dispatcher(){
-
+ 
+  }
+  void escalonador(){
+  	swapcontext();
   }
 */
 
@@ -207,6 +210,16 @@ int csem_init(csem_t *sem, int count){
 //int cwait(csem_t *sem){
 //  return ERRO;
 //}
-//int csignal(csem_t *sem){
-//  return ERRO;
-//}
+int csignal(csem_t *sem){
+	if(sem->fila == NULL) return ERRO;
+	if(FilaFirst2(sem->fila) == 0){ // fila nao vazia
+		TCB_t *thread = GetAtIteratorFila2(sem->fila);
+		DeleteAtIteratorFila2(sem->fila);
+		AppendFila2(apto, thread);
+		thread->state = PROCST_APTO;
+	}
+	else{ //fila vazia, apenas incrementa o contador de volta para 1
+		sem->count++;
+	}
+	return SUCESSO;
+}
