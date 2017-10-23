@@ -11,6 +11,7 @@ PFILA2 aptos;
 PFILA2 bloqueados;
 PFILA2 executando;
 PFILA2 esperando;
+PFILA2 terminado;
 int numT = 1;
 int filascriadas = 0;
 ucontext_t escalonador;
@@ -35,6 +36,7 @@ void CriaFilas(){
   CreateFila2(bloqueados);
   CreateFila2(executando);
   CreateFila2(esperando);
+  CreateFila2(terminado);
   filascriadas = 1;
 }
 
@@ -51,52 +53,63 @@ void InicializaVariavies()
     CriaFilas();
 }
 
+
 TCB_t* check_tid_apto(int tid){
     TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
-    if(!FisrtFila2(aptos)) ;
-    
+    if(!FirstFila2(aptos)) {
+
     do{
       tcb = GetAtIteratorFila2(aptos);
       if(tcb->tid == tid) return tcb;
-    while( !(NextFila2(aptos)) );
-
+    }while( !(NextFila2(aptos)) );
+}
     return NULL;
 }
 
 TCB_t* check_tid_esperando(int tid){
     TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
-    if(!FisrtFila2(esperando)) ;
-    
+    if(!FirstFila2(esperando)) {
+
     do{
       tcb = GetAtIteratorFila2(esperando);
       if(tcb->tid == tid) return tcb;
-    while( !(NextFila2(esperando)) );
-
+    }while( !(NextFila2(esperando)) );
+}
     return NULL;
 }
 
 TCB_t* check_tid_bloqueados(int tid){
     TCB_t* tcb = (TCB_t*) malloc(sizeof(TCB_t));
-    if(!FisrtFila2(bloqueados)) ;
-    
+    if(!FirstFila2(bloqueados)) {
+
     do{
       tcb = GetAtIteratorFila2(bloqueados);
       if(tcb->tid == tid) return tcb;
-    while( !(NextFila2(bloqueados)) );
-
+    }while( !(NextFila2(bloqueados)) );
+}
     return NULL;
+}
+
+void escalonadorupdate(){
+   TCB_t* tcb = GetAtIteratorFila2(executando);
+    if(tcb != NULL){
+       tcb->state = PROCST_TERMINO;
+       AppendFila2(terminado, tcb);
+       DeleteAtIteratorFila2(executando);
+    }
+
 }
 
 void finalizer(){
     // se ha alguma thread esperando esta que termina, libera a thread para aptos
-    if(executando->bloqueando){
+    //if(executando->bloqueando){
 	//acha ponteiro na fila de bloqueados
 	//deleta ponteiro na fila de bloqueados
 	//coloca thread em aptos
         ///TCB_t* tcb = executando->bloqueando;
 	///tcb->PROCST_APTO;
 	///tcb
-    }
+    //}
 }
 //int iniciaThreads(){
 //  CreateFila2(aptos);
@@ -141,12 +154,17 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
 int cyield(void){
   TCB_t *thread = GetAtIteratorFila2(executando);
   thread->state = PROCST_APTO;
+  int erro = 0;
+  if(AppendFila2(aptos, thread)!=0){erro =  1;}
+  if(DeleteAtIteratorFila2(executando)!=0){erro = 1;}
 
-  //AppendFila2(aptos, thread);
-  //DeleteAtIteratorFila2(executando);
-  //escalonador();
-
-  return ERRO;
+  if(erro == 1){return ERRO;}
+  else
+     {
+  swapcontext(&thread->context,&escalonador);
+  //escalonadorupdate();
+  return SUCESSO;
+     }
 }
 
 int cjoin(int tid){
