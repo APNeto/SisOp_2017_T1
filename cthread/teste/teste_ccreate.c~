@@ -1,0 +1,15 @@
+#include "../include/cthread.h"
+
+void* teste(void *arg){
+  printf("Thread 2 --  %d\n",*((int *)arg));
+  return 0;
+}
+
+int main(int argc,char *argv[]){
+argc=10;
+printf("testando ccreate\n");   
+int testando = ccreate(teste,(void*)&argc,5);
+printf("passou");
+printf("%d",testando);
+  return 0;
+}

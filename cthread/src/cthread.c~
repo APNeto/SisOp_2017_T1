@@ -185,64 +185,9 @@ int cyield(void){
      }
 }
 
-
 int cjoin(int tid){
-  TCB_t *thread = (TCB_t*) GetAtIteratorFila2(executando);
   
-  
-  TCB_t *tidThread = check_tid_apto(tid);
-  //check se tid em aptos
-  if(tidThread){
-    //check se thread_de_tid ja eh esperada por outra thread
-    if(tidThread->bloqueando) return ERRO;
-
-    executando->bloqueando = tidThread;
-    executando->state = PROCST_BLOQ;
-    //AppendFila2(bloqueados, executando);
-    //DeleteAtIteratorFila2(executando);
-    escalonadorupdate();
-    return SUCESSO;
-  }
-  
-  //check se tid em esperando
-  tidThread = check_tid_esperando(tid);
-  if(tidThread){
-    //check se thread_de_tid ja eh esperada por outra thread
-    if(tidThread->bloqueando) return ERRO;
-	  
-    executando->bloqueando = tidThread;
-    executando->state = PROCST_BLOQ;
-    //AppendFila2(bloqueados, executando);
-    //DeleteAtIteratorFila2(executando);
-    escalonadorupdate();
-    return SUCESSO;
-  }
-
-  //se em bloqueados, check se thread_de_tid está com join em thread
-  TCB_t *tidThread = check_tid_bloqueados(tid);
-  if(tidThread){
-    if(tidThread->bloqueando->tid == executando->tid) return ERRO;
-
-    //check se thread_de_tid ja eh esperada por outra thread
-    if(tidThread->bloqueando) return ERRO;
-	  
-    executando->bloqueando = tidThread;
-    executando->state = PROCST_BLOQ;
-    //AppendFila2(bloqueados, executando);
-    escalonadorupdate();
-    return SUCESSO;
-  }
-  //caso nao encontre tid, a thread ja finalizou
   return ERRO;
-}
-
-//csem_t semaforos;
-int csem_init(csem_t *sem, int count){
-    sem = (csem_t*) malloc (sizeof(csem_t));
-    sem->count = 1;
-    CreateFila2(sem->fila);
-    if(sem->fila) return SUCESSO;
-    return ERRO; //caso fila nao tenha sido alocada corretamente
 }
 
 //csem_t semaforos;
