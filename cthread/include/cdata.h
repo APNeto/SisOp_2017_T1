@@ -33,5 +33,9 @@ typedef struct s_TCB {
 	
 } TCB_t; 
 
+typedef struct s_sem {
+	int count; 			// livre > 0 // ocupado <=0
+	PFILA2 fila;                    // threads bloqueadas
+} csem_t; 
 
 #endif
