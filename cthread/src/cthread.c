@@ -172,6 +172,7 @@ int cyield(void){
 
 
 int cjoin(int tid){
+  if(tid > numT) return ERRO; // numero tid com certeza esta errado pois n houve thread com este tid
   TCB_t *thread = (TCB_t*) GetAtIteratorFila2(executando);
   
   
@@ -204,7 +205,7 @@ int cjoin(int tid){
   }
 
   //se em bloqueados, check se thread_de_tid está com join em thread
-  TCB_t *tidThread = check_tid_bloqueados(tid);
+  tidThread = check_tid_bloqueados(tid);
   if(tidThread){
     if(tidThread->bloqueando->tid == executando->tid) return ERRO;
 
@@ -230,9 +231,24 @@ int csem_init(csem_t *sem, int count){
     return ERRO; //caso fila nao tenha sido alocada corretamente
 }
 
-//int cwait(csem_t *sem){
-//  return ERRO;
-//}
+
+int cwait(csem_t *sem){
+  if(sem->fila == NULL) return ERRO; // sem n foi inicializado
+  if(sem->count > 0){
+    sem->count--;
+    
+  }
+  else{ // semaforo ocupado
+    TCB_t thread = GetAtIteratorFila2(executando);
+    AppendFila2(sem->fila, thread);
+    thread->status = PROCST_BLOQ;
+    DeleteAtIteratorFila2(executando);
+    AppendFila2(esperando, thread);
+    escalonadorupdate();
+  }
+  return SUCCESS;
+}
+
 int csignal(csem_t *sem){
 	if(sem->fila == NULL) return ERRO;
 	if(FirstFila2(sem->fila) == 0){ // fila nao vazia
