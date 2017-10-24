@@ -7,9 +7,8 @@ void* teste(void *arg){
 
 int main(int argc,char *argv[]){
 argc=10;
-printf("testando ccreate\n");   
 int testando = ccreate(teste,(void*)&argc,5);
-printf("passou");
+int testando2 = ccreate(teste,(void*)&argc,5);
 printf("%d",testando);
   return 0;
 }
