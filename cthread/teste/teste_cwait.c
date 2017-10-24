@@ -1,0 +1,11 @@
+#include "../include/cthread.h"
+#include <stdio.h>
+
+int main(int argc, char *argv[]) {
+    csem_t* sem;
+    csem_init(sem, 5);
+    
+    csignal(sem);
+    
+    cwait(sem);
+}

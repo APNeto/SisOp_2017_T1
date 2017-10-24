@@ -9,9 +9,9 @@ void *teste(void *arg)
 
 int main(int argc, char *argv[])
 {
-  argc = 10;
-  int testando = ccreate(teste, (void *)&argc, 5);
-  int testando2 = ccreate(teste, (void *)&argc, 5);
-  printf("%d", testando);
+  ccreate(teste,NULL, 5);
+  ccreate(teste,NULL, 5);
+  ccreate(teste,NULL, 5);
+  ccreate(teste,NULL, 5);
   return 0;
 }

@@ -19,18 +19,48 @@ int numT = 1;
 int filascriadas = 0;
 ucontext_t escalonador;
 TCB_t thread_main;
+clock_t inicialT;
 
-void dispatcher(){
-  TCB_t *prox = (TCB_t *) GetAtIteratorFila2(&aptos);
+void dispatcher()
+{
+  FirstFila2(&aptos);
+  TCB_t *prox = GetAtIteratorFila2(&aptos);// (TCB_t *)GetAtIteratorFila2(&aptos);
   prox->state = PROCST_EXEC;
 
   DeleteAtIteratorFila2(&aptos);
   thread_executando = prox;
-  //AppendFila2(&executando, prox);
 
   printf("Passando os recursos para a thread %d \n", thread_executando->tid);
+  time(&inicialT);
   setcontext(&(prox->context));
   return;
+}
+
+void finalizador()
+{
+  // se ha alguma thread esperando esta que termina, libera a thread para aptos
+  //acha ponteiro na fila de bloqueados
+  //deleta ponteiro na fila de bloqueados
+  //coloca thread em aptos
+  TCB_t *exec = thread_executando;
+  if (exec->bloqueando)
+  {
+    FirstFila2(&bloqueados);
+    do
+    {
+      TCB_t *tcb = GetAtIteratorFila2(&bloqueados);
+      if (tcb->tid == exec->bloqueando->tid)
+      {
+        DeleteAtIteratorFila2(&bloqueados);
+        InsertByPrio(&aptos, tcb);
+        tcb->state = PROCST_APTO;
+        return;
+      }
+    } while (!(NextFila2(&bloqueados)));
+    //exec->state = PROCST_TERMINO;
+    //setcontext(&(escalonador));
+    return;
+  }
 }
 
 void escalonadorupdate()
@@ -39,14 +69,16 @@ void escalonadorupdate()
   //TCB_t *thread_executando = (TCB_t *) GetAtIteratorFila2(&executando);
   if (thread_executando != NULL)
   {
-    if(thread_executando->state == PROCST_TERMINO){ //libera recursos da thread
+    finalizador();
+    /*if(thread_executando->state == PROCST_TERMINO){ //libera recursos da thread
       free(thread_executando);
     }
     else{//coloca thread em aptos
       InsertByPrio(&aptos, thread_executando);
     }
     //DeleteAtIteratorFila2(&executando);
-    thread_executando = NULL;    
+    */
+    thread_executando = NULL;
     printf("escalonador liberando os recursos\n");
     //AppendFila2(terminado, thread_executando);
   }
@@ -56,7 +88,7 @@ void escalonadorupdate()
   // n vai acontecer, deve ao menos ter main
   if (FirstFila2(&aptos) != 0)
   {
-    printf("A fila de aptos está vazia\n"); 
+    printf("A fila de aptos está vazia\n");
     return;
   }
   // if(thread_executando = NULL){
@@ -157,36 +189,15 @@ TCB_t *check_tid_bloqueados(int tid)
   return NULL;
 }
 
-void finalizador()
-{
-  // se ha alguma thread esperando esta que termina, libera a thread para aptos
-  //acha ponteiro na fila de bloqueados
-  //deleta ponteiro na fila de bloqueados
-  //coloca thread em aptos
-  TCB_t *exec = thread_executando;
-  if(exec->bloqueando){
-    FirstFila2(&bloqueados);
-    do
-    {
-      TCB_t *tcb = GetAtIteratorFila2(&bloqueados);
-      if (tcb->tid == exec->bloqueando->tid){
-        DeleteAtIteratorFila2(&bloqueados);
-        InsertByPrio(&aptos, tcb);
-        tcb->state = PROCST_APTO;
-        break;
-      }
-    } while (!(NextFila2(&bloqueados)));
-    exec->state = PROCST_TERMINO;
-    
-    setcontext(&(escalonador));
-  }
-}
+
 
 int make_join(TCB_t *thread, TCB_t *tidThread)
 {
   if (tidThread->bloqueando) //check se thread_de_tid ja eh esperada por outra thread
     return ERRO;
 
+  clock_t termino;
+  thread->prio += difftime(termino, inicialT);
   tidThread->bloqueando = thread;
   thread->state = PROCST_BLOQ;
   thread_executando = NULL;
@@ -230,10 +241,15 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
 int cyield(void)
 {
   printf("Iniciando yield \n");
+  clock_t termino;
+  time(&termino);
   TCB_t *thread = thread_executando;
+  thread->prio += difftime(termino, inicialT);
   thread->state = PROCST_APTO;
+  InsertByPrio(&aptos, thread);
   thread_executando = NULL;
   printf("Thread %d liberou a cpu\n", thread->tid);
+
   //escalonador();
   swapcontext(&thread->context, &escalonador);
   return SUCESSO;
@@ -241,7 +257,8 @@ int cyield(void)
 
 int cjoin(int tid)
 {
-  if (tid > numT) return ERRO; // numero tid com certeza esta errado pois n houve thread com este tid
+  if (tid > numT)
+    return ERRO;                     // numero tid com certeza esta errado pois n houve thread com este tid
   TCB_t *thread = thread_executando; //(TCB_t *)GetAtIteratorFila2(&executando);
 
   TCB_t *tidThread = check_tid_apto(tid);
@@ -266,7 +283,7 @@ int cjoin(int tid)
     if (thread->bloqueando)
       if (tid == thread->bloqueando->tid)
         return ERRO;
-    
+
     return make_join(thread, tidThread);
   }
   //caso nao encontre tid, a thread ja finalizou
@@ -277,8 +294,11 @@ int cjoin(int tid)
 int csem_init(csem_t *sem, int count)
 {
   sem = (csem_t *)malloc(sizeof(csem_t));
-  sem->count = 1;
+  sem->fila = (PFILA2)malloc(sizeof(FILA2));
+  sem->count = count;
+  printf("criando fila\n");
   CreateFila2(sem->fila);
+  printf("filacriada\n");
   if (sem->fila)
     return SUCESSO;
   return ERRO; //caso fila nao tenha sido alocada corretamente
@@ -286,6 +306,7 @@ int csem_init(csem_t *sem, int count)
 
 int cwait(csem_t *sem)
 {
+  printf("cwait\n");
   if (sem->fila == NULL)
     return ERRO; // sem n foi inicializado
   if (sem->count > 0)
@@ -294,7 +315,10 @@ int cwait(csem_t *sem)
   }
   else
   { // semaforo ocupado
+    clock_t termino;
+    time(&termino);
     TCB_t *thread = thread_executando; //GetAtIteratorFila2(&executando);
+    thread->prio += difftime(termino, inicialT);
     AppendFila2(sem->fila, thread);
     thread->state = PROCST_BLOQ;
     thread_executando = NULL;
@@ -307,13 +331,25 @@ int cwait(csem_t *sem)
 
 int csignal(csem_t *sem)
 {
+ printf("csignal\n");
   if (sem->fila == NULL)
     return ERRO;
   if (FirstFila2(sem->fila) == 0)
   { // fila nao vazia
     TCB_t *thread = GetAtIteratorFila2(sem->fila);
     DeleteAtIteratorFila2(sem->fila);
-    AppendFila2(&aptos, thread);
+
+    FirstFila2(&esperando);
+    TCB_t *tcb = (TCB_t *) GetAtIteratorFila2(&esperando);
+    do
+    { 
+      if(tcb->tid == thread->tid)
+      {
+        DeleteAtIteratorFila2(&esperando);
+        break;
+      }
+    } while (!(NextFila2(&esperando)));
+    InsertByPrio(&aptos, thread);
     thread->state = PROCST_APTO;
   }
   else

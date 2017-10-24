@@ -23,12 +23,12 @@ clock_t inicialT;
 
 void dispatcher()
 {
-  TCB_t *prox = (TCB_t *)GetAtIteratorFila2(&aptos);
+  FirstFila2(&aptos);
+  TCB_t *prox = GetAtIteratorFila2(&aptos);// (TCB_t *)GetAtIteratorFila2(&aptos);
   prox->state = PROCST_EXEC;
 
   DeleteAtIteratorFila2(&aptos);
   thread_executando = prox;
-  //AppendFila2(&executando, prox);
 
   printf("Passando os recursos para a thread %d \n", thread_executando->tid);
   time(&inicialT);
@@ -294,8 +294,11 @@ int cjoin(int tid)
 int csem_init(csem_t *sem, int count)
 {
   sem = (csem_t *)malloc(sizeof(csem_t));
-  sem->count = 1;
+  sem->fila = (PFILA2)malloc(sizeof(FILA2));
+  sem->count = count;
+  printf("criando fila\n");
   CreateFila2(sem->fila);
+  printf("filacriada\n");
   if (sem->fila)
     return SUCESSO;
   return ERRO; //caso fila nao tenha sido alocada corretamente
@@ -303,6 +306,7 @@ int csem_init(csem_t *sem, int count)
 
 int cwait(csem_t *sem)
 {
+  printf("cwait\n");
   if (sem->fila == NULL)
     return ERRO; // sem n foi inicializado
   if (sem->count > 0)
@@ -327,6 +331,7 @@ int cwait(csem_t *sem)
 
 int csignal(csem_t *sem)
 {
+ printf("csignal\n");
   if (sem->fila == NULL)
     return ERRO;
   if (FirstFila2(sem->fila) == 0)
