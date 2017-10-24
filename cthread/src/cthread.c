@@ -2,6 +2,7 @@
 #include "../include/support.h"
 #include "../include/cdata.h"
 #include <stdlib.h>
+#include <stdio.h>
 #define ERRO -1
 #define SUCESSO 0
 
@@ -24,20 +25,20 @@ void escalonadorupdate(){
   if(thread_executando!=NULL){
 	printf("escalonador liberando os recursos\n");
         thread_executando->state = PROCST_TERMINO;
-	AppendFila2(&terminado, thread_executando);
- 	thread_executando = NULL;   
+	AppendFila2(terminado, thread_executando);
+ 	thread_executando = NULL;
         }
-  if(LastFila2(&aptos)!=0){
+  if(LastFila2(aptos)!=0){
 	printf("A fila de aptos está vazia\n");
 	return;
 	}
-  thread_executando = GetAtIteratorFila2(&aptos);
+  thread_executando = GetAtIteratorFila2(aptos);
  // if(thread_executando = NULL){
 //	thread_executando = &thread_main;
   //}
   thread_executando->state = PROCST_EXEC;
   printf("Passando os recursos para a thread %d \n",thread_executando->tid);
-  setcontext(&thread_executando->context);
+  setcontext(&(thread_executando->context));
 }
 
 int cidentify (char *name, int size){
@@ -58,15 +59,15 @@ void init_escalonador() {
 
 void CriaFilas(){
   printf("Criando fila Aptos\n");
-  CreateFila2(&aptos);
+  CreateFila2(aptos);
   printf("Criando fila bloqueados\n");
-  CreateFila2(&bloqueados);
+  CreateFila2(bloqueados);
   printf("Criando fila executando\n");
-  CreateFila2(&executando);
+  CreateFila2(executando);
   printf("Criando fila esperando\n");
-  CreateFila2(&esperando);
+  CreateFila2(esperando);
   printf("Criando fila terminado\n");
-  CreateFila2(&terminado);
+  CreateFila2(terminado);
   filascriadas = 1;
 }
 
@@ -154,8 +155,9 @@ int ccreate (void* (*start)(void*), void *arg, int prio) {
   tcb->context.uc_stack.ss_sp = stack_tcb;
   tcb->context.uc_stack.ss_size = SIGSTKSZ;
   tcb->prio = prio;
+  tcb->bloqueando = NULL;
   makecontext(&(tcb->context), (void(*)(void)) start, 1, arg);
-  AppendFila2(&aptos, tcb);
+  AppendFila2(aptos, tcb);
   printf("Thread criada, tid %d \n",tcb->tid);
   return tcb->tid;
 }
@@ -182,8 +184,8 @@ int cjoin(int tid){
     //check se thread_de_tid ja eh esperada por outra thread
     if(tidThread->bloqueando) return ERRO;
 
-    executando->bloqueando = tidThread;
-    executando->state = PROCST_BLOQ;
+    thread->bloqueando = tidThread;
+    thread->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
     //DeleteAtIteratorFila2(executando);
     escalonadorupdate();
@@ -196,8 +198,8 @@ int cjoin(int tid){
     //check se thread_de_tid ja eh esperada por outra thread
     if(tidThread->bloqueando) return ERRO;
 	  
-    executando->bloqueando = tidThread;
-    executando->state = PROCST_BLOQ;
+    thread->bloqueando = tidThread;
+    thread->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
     //DeleteAtIteratorFila2(executando);
     escalonadorupdate();
@@ -207,13 +209,13 @@ int cjoin(int tid){
   //se em bloqueados, check se thread_de_tid está com join em thread
   tidThread = check_tid_bloqueados(tid);
   if(tidThread){
-    if(tidThread->bloqueando->tid == executando->tid) return ERRO;
+    if(tidThread->bloqueando->tid == thread->tid) return ERRO;
 
     //check se thread_de_tid ja eh esperada por outra thread
     if(tidThread->bloqueando) return ERRO;
 	  
-    executando->bloqueando = tidThread;
-    executando->state = PROCST_BLOQ;
+    thread->bloqueando = tidThread;
+    thread->state = PROCST_BLOQ;
     //AppendFila2(bloqueados, executando);
     escalonadorupdate();
     return SUCESSO;
@@ -231,22 +233,20 @@ int csem_init(csem_t *sem, int count){
     return ERRO; //caso fila nao tenha sido alocada corretamente
 }
 
-
 int cwait(csem_t *sem){
   if(sem->fila == NULL) return ERRO; // sem n foi inicializado
   if(sem->count > 0){
     sem->count--;
-    
   }
   else{ // semaforo ocupado
-    TCB_t thread = GetAtIteratorFila2(executando);
+    TCB_t *thread = GetAtIteratorFila2(executando);
     AppendFila2(sem->fila, thread);
-    thread->status = PROCST_BLOQ;
+    thread->state = PROCST_BLOQ;
     DeleteAtIteratorFila2(executando);
     AppendFila2(esperando, thread);
     escalonadorupdate();
   }
-  return SUCCESS;
+  return SUCESSO;
 }
 
 int csignal(csem_t *sem){
