@@ -9,11 +9,10 @@
 #define ERRO -1
 #define SUCESSO 0
 
-PFILA2 aptos;
-PFILA2 bloqueados;
-PFILA2 esperando; // espera recurso
-PFILA2 terminado;
-PFILA2 executando;
+FILA2 aptos;
+FILA2 bloqueados;
+FILA2 esperando; // espera recurso
+FILA2 terminado;
 TCB_t *thread_executando;
 
 int numT = 1;
@@ -22,11 +21,12 @@ ucontext_t escalonador;
 TCB_t thread_main;
 
 void dispatcher(){
-  TCB_t *prox = (TCB_t *) GetAtIteratorFila2(aptos);
+  TCB_t *prox = (TCB_t *) GetAtIteratorFila2(&aptos);
   prox->state = PROCST_EXEC;
 
-  DeleteAtIteratorFila2(aptos);
-  AppendFila2(executando, prox);
+  DeleteAtIteratorFila2(&aptos);
+  thread_executando = prox;
+  //AppendFila2(&executando, prox);
 
   printf("Passando os recursos para a thread %d \n", thread_executando->tid);
   setcontext(&(prox->context));
@@ -36,25 +36,25 @@ void dispatcher(){
 void escalonadorupdate()
 {
   printf("escalonador iniciando os trabalhos\n");
-  TCB_t *thread_executando = (TCB_t *) GetAtIteratorFila2(executando);
+  //TCB_t *thread_executando = (TCB_t *) GetAtIteratorFila2(&executando);
   if (thread_executando != NULL)
   {
     if(thread_executando->state == PROCST_TERMINO){ //libera recursos da thread
       free(thread_executando);
     }
     else{//coloca thread em aptos
-      InsertByPrio(aptos, thread_executando);
+      InsertByPrio(&aptos, thread_executando);
     }
-    DeleteAtIteratorFila2(executando);
+    //DeleteAtIteratorFila2(&executando);
+    thread_executando = NULL;    
     printf("escalonador liberando os recursos\n");
     //AppendFila2(terminado, thread_executando);
-    thread_executando = NULL;
   }
 
   return dispatcher();
 
   // n vai acontecer, deve ao menos ter main
-  if (FirstFila2(aptos) != 0)
+  if (FirstFila2(&aptos) != 0)
   {
     printf("A fila de aptos está vazia\n"); 
     return;
@@ -84,15 +84,13 @@ void init_escalonador()
 void CriaFilas()
 {
   printf("Criando fila Aptos\n");
-  CreateFila2(aptos);
+  CreateFila2(&aptos);
   printf("Criando fila bloqueados\n");
-  CreateFila2(bloqueados);
-  printf("Criando fila executando\n");
-  CreateFila2(executando);
+  CreateFila2(&bloqueados);
   printf("Criando fila esperando\n");
-  CreateFila2(esperando);
+  CreateFila2(&esperando);
   printf("Criando fila terminado\n");
-  CreateFila2(terminado);
+  CreateFila2(&terminado);
   filascriadas = 1;
 }
 
@@ -102,8 +100,6 @@ void Create_Main_Thread()
   thread_main.state = PROCST_EXEC;
   getcontext(&(thread_main.context));
   thread_executando = &thread_main;
-  FirstFila2(executando);
-  AppendFila2(executando, &thread_main);
 }
 
 void InicializaVariavies()
@@ -119,14 +115,14 @@ void InicializaVariavies()
 TCB_t *check_tid_apto(int tid)
 {
   TCB_t *tcb = (TCB_t *)malloc(sizeof(TCB_t));
-  if (!FirstFila2(aptos))
+  if (!FirstFila2(&aptos))
   {
     do
     {
-      tcb = GetAtIteratorFila2(aptos);
+      tcb = GetAtIteratorFila2(&aptos);
       if (tcb->tid == tid)
         return tcb;
-    } while (!(NextFila2(aptos)));
+    } while (!(NextFila2(&aptos)));
   }
   return NULL;
 }
@@ -134,14 +130,14 @@ TCB_t *check_tid_apto(int tid)
 TCB_t *check_tid_esperando(int tid)
 {
   TCB_t *tcb = (TCB_t *)malloc(sizeof(TCB_t));
-  if (!FirstFila2(esperando))
+  if (!FirstFila2(&esperando))
   {
     do
     {
-      tcb = GetAtIteratorFila2(esperando);
+      tcb = GetAtIteratorFila2(&esperando);
       if (tcb->tid == tid)
         return tcb;
-    } while (!(NextFila2(esperando)));
+    } while (!(NextFila2(&esperando)));
   }
   return NULL;
 }
@@ -149,14 +145,14 @@ TCB_t *check_tid_esperando(int tid)
 TCB_t *check_tid_bloqueados(int tid)
 {
   TCB_t *tcb = (TCB_t *)malloc(sizeof(TCB_t));
-  if (!FirstFila2(bloqueados))
+  if (!FirstFila2(&bloqueados))
   {
     do
     {
-      tcb = GetAtIteratorFila2(bloqueados);
+      tcb = GetAtIteratorFila2(&bloqueados);
       if (tcb->tid == tid)
         return tcb;
-    } while (!(NextFila2(bloqueados)));
+    } while (!(NextFila2(&bloqueados)));
   }
   return NULL;
 }
@@ -167,19 +163,19 @@ void finalizador()
   //acha ponteiro na fila de bloqueados
   //deleta ponteiro na fila de bloqueados
   //coloca thread em aptos
-  TCB_t *exec = (TCB_t *) GetAtIteratorFila2(executando);
+  TCB_t *exec = thread_executando;
   if(exec->bloqueando){
-    FirstFila2(bloqueados);
+    FirstFila2(&bloqueados);
     do
     {
-      TCB_t *tcb = GetAtIteratorFila2(bloqueados);
+      TCB_t *tcb = GetAtIteratorFila2(&bloqueados);
       if (tcb->tid == exec->bloqueando->tid){
-        DeleteAtIteratorFila2(bloqueados);
-        InsertByPrio(aptos, tcb);
+        DeleteAtIteratorFila2(&bloqueados);
+        InsertByPrio(&aptos, tcb);
         tcb->state = PROCST_APTO;
         break;
       }
-    } while (!(NextFila2(bloqueados)));
+    } while (!(NextFila2(&bloqueados)));
     exec->state = PROCST_TERMINO;
     
     setcontext(&(escalonador));
@@ -193,8 +189,9 @@ int make_join(TCB_t *thread, TCB_t *tidThread)
 
   tidThread->bloqueando = thread;
   thread->state = PROCST_BLOQ;
-  DeleteAtIteratorFila2(executando);
-  AppendFila2(bloqueados, thread);
+  thread_executando = NULL;
+  //DeleteAtIteratorFila2(&executando);
+  AppendFila2(&bloqueados, thread);
   swapcontext(&thread->context, &escalonador);
   return SUCESSO;
 }
@@ -224,7 +221,7 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
 
   // insere na fila de aptos de acordo com tempo prio transcorrido durante ultima exec
   // thread criada agora: prio = 0
-  InsertByPrio(aptos, tcb);
+  InsertByPrio(&aptos, tcb);
   ///AppendFila2(aptos, tcb);
   printf("Thread criada, tid %d \n", tcb->tid);
   return tcb->tid;
@@ -245,7 +242,7 @@ int cyield(void)
 int cjoin(int tid)
 {
   if (tid > numT) return ERRO; // numero tid com certeza esta errado pois n houve thread com este tid
-  TCB_t *thread = (TCB_t *)GetAtIteratorFila2(executando);
+  TCB_t *thread = thread_executando; //(TCB_t *)GetAtIteratorFila2(&executando);
 
   TCB_t *tidThread = check_tid_apto(tid);
   //check se tid em aptos
@@ -297,11 +294,12 @@ int cwait(csem_t *sem)
   }
   else
   { // semaforo ocupado
-    TCB_t *thread = GetAtIteratorFila2(executando);
+    TCB_t *thread = thread_executando; //GetAtIteratorFila2(&executando);
     AppendFila2(sem->fila, thread);
     thread->state = PROCST_BLOQ;
-    DeleteAtIteratorFila2(executando);
-    AppendFila2(esperando, thread);
+    thread_executando = NULL;
+    //DeleteAtIteratorFila2(&executando);
+    AppendFila2(&esperando, thread);
     escalonadorupdate();
   }
   return SUCESSO;
@@ -315,7 +313,7 @@ int csignal(csem_t *sem)
   { // fila nao vazia
     TCB_t *thread = GetAtIteratorFila2(sem->fila);
     DeleteAtIteratorFila2(sem->fila);
-    AppendFila2(aptos, thread);
+    AppendFila2(&aptos, thread);
     thread->state = PROCST_APTO;
   }
   else
