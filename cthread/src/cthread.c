@@ -19,6 +19,7 @@ int numT = 1;
 int filascriadas = 0;
 ucontext_t escalonador;
 TCB_t thread_main;
+clock_t inicialT;
 
 void dispatcher(){
   TCB_t *prox = (TCB_t *) GetAtIteratorFila2(&aptos);
@@ -29,6 +30,7 @@ void dispatcher(){
   //AppendFila2(&executando, prox);
 
   printf("Passando os recursos para a thread %d \n", thread_executando->tid);
+  time(inicialT);
   setcontext(&(prox->context));
   return;
 }
@@ -187,6 +189,8 @@ int make_join(TCB_t *thread, TCB_t *tidThread)
   if (tidThread->bloqueando) //check se thread_de_tid ja eh esperada por outra thread
     return ERRO;
 
+  clock_t termino;
+  thread->prio += difftime(termino, inicialT);
   tidThread->bloqueando = thread;
   thread->state = PROCST_BLOQ;
   thread_executando = NULL;
@@ -230,7 +234,10 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
 int cyield(void)
 {
   printf("Iniciando yield \n");
+  clock_t termino;
+  time(&termino);
   TCB_t *thread = thread_executando;
+  thread->prio += difftime(termino, inicialT);
   thread->state = PROCST_APTO;
   thread_executando = NULL;
   printf("Thread %d liberou a cpu\n", thread->tid);
@@ -294,7 +301,10 @@ int cwait(csem_t *sem)
   }
   else
   { // semaforo ocupado
+    clock_t termino;
+    time(&termino);
     TCB_t *thread = thread_executando; //GetAtIteratorFila2(&executando);
+    thread->prio += difftime(termino, inicialT);
     AppendFila2(sem->fila, thread);
     thread->state = PROCST_BLOQ;
     thread_executando = NULL;
@@ -311,9 +321,9 @@ int csignal(csem_t *sem)
     return ERRO;
   if (FirstFila2(sem->fila) == 0)
   { // fila nao vazia
-    TCB_t *thread = GetAtIteratorFila2(sem->fila);
+    TCB_t *thread = GetAtIteratorFila2(sem->fila)
     DeleteAtIteratorFila2(sem->fila);
-    AppendFila2(&aptos, thread);
+    InsertByPrio(&aptos, thread);
     thread->state = PROCST_APTO;
   }
   else
