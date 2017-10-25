@@ -21,7 +21,7 @@ EXP_DIR=./exemplos
 all: regra1 regra2 regra3 regra4
 
 regra1: $(SRC_DIR)/cthread.c $(INC_DIR)/cdata.h $(INC_DIR)/cthread.h $(INC_DIR)/support.h $(BIN_DIR)/support.o
-	$(CC) -c $(SRC_DIR)/cthread.c 
+	$(CC) -c $(SRC_DIR)/cthread.c -Wall
 
 regra2: 
 	mv *.o $(BIN_DIR)
@@ -35,6 +35,6 @@ regra4:
 
 
 clean:
-	rm -rf $(LIB_DIR)/*.a $(BIN_DIR)/*.o $(SRC_DIR)/*~ $(INC_DIR)/*~ *~
+	rm -rf $(LIB_DIR)/*.a $(BIN_DIR)/cthread.o $(TST_DIR)/*.exe $(TST_DIR)/*.o $(SRC_DIR)/*~ $(INC_DIR)/*~ *~
 
 

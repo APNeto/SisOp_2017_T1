@@ -18,7 +18,7 @@ SRC_DIR=../src
 TST_DIR=../teste
 EXP_DIR=../exemplos
 
-all: regra1 regra2 regra4 regra5 regra6 regra7 regra8
+all: regra1 regra2 regra4 regra5 regra6
 
 regra1:
 	$(CC) -o $(TST_DIR)/teste_ccreate $(TST_DIR)/teste_ccreate.c -L$(LIB_DIR) -lcthread
@@ -38,13 +38,8 @@ regra5:
 regra6:
 	$(CC) -o $(TST_DIR)/caso3 $(TST_DIR)/caso3.c -L$(LIB_DIR) -lcthread
 
-regra7:
-	$(CC) -o $(TST_DIR)/caso4 $(TST_DIR)/caso4.c -L$(LIB_DIR) -lcthread
-
-regra8:
-	$(CC) -o $(TST_DIR)/caso5 $(TST_DIR)/caso5.c -L$(LIB_DIR) -lcthread
 
 clean:
-	rm -rf $(TST_DIR)/*.a $(TST_DIR)/*.o
+	rm -rf $(TST_DIR)/*.a $(TST_DIR)/*.o $(TST_DIR)/*.exe
 
 

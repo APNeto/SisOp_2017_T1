@@ -198,6 +198,7 @@ int make_join(TCB_t *thread, TCB_t *tidThread)
     return ERRO;
 
   clock_t termino;
+  time(&termino);
   thread->prio += difftime(termino, inicialT);
   tidThread->bloqueando = thread;
   thread->state = PROCST_BLOQ;
