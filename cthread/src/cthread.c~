@@ -30,7 +30,7 @@ void dispatcher()
   DeleteAtIteratorFila2(&aptos);
   thread_executando = prox;
 
-  printf("Passando os recursos para a thread %d \n", thread_executando->tid);
+  //printf("Passando os recursos para a thread %d \n", thread_executando->tid);
   time(&inicialT);
   setcontext(&(prox->context));
   return;
@@ -65,7 +65,7 @@ void finalizador()
 
 void escalonadorupdate()
 {
-  printf("escalonador iniciando os trabalhos\n");
+  //printf("escalonador iniciando os trabalhos\n");
   //TCB_t *thread_executando = (TCB_t *) GetAtIteratorFila2(&executando);
   if (thread_executando != NULL)
   {
@@ -79,7 +79,7 @@ void escalonadorupdate()
     //DeleteAtIteratorFila2(&executando);
     */
     thread_executando = NULL;
-    printf("escalonador liberando os recursos\n");
+    //printf("escalonador liberando os recursos\n");
     //AppendFila2(terminado, thread_executando);
   }
 
@@ -115,13 +115,13 @@ void init_escalonador()
 
 void CriaFilas()
 {
-  printf("Criando fila Aptos\n");
+  //printf("Criando fila Aptos\n");
   CreateFila2(&aptos);
-  printf("Criando fila bloqueados\n");
+  //printf("Criando fila bloqueados\n");
   CreateFila2(&bloqueados);
-  printf("Criando fila esperando\n");
+  //printf("Criando fila esperando\n");
   CreateFila2(&esperando);
-  printf("Criando fila terminado\n");
+  //printf("Criando fila terminado\n");
   CreateFila2(&terminado);
   filascriadas = 1;
 }
@@ -130,17 +130,18 @@ void Create_Main_Thread()
 {
   thread_main.tid = 0;
   thread_main.state = PROCST_EXEC;
+  thread_main.prio = 100;
   getcontext(&(thread_main.context));
   thread_executando = &thread_main;
 }
 
 void InicializaVariavies()
 {
-  printf("Criando Filas\n");
+  //printf("Criando Filas\n");
   CriaFilas();
-  printf("Criando escalonador\n");
+  //printf("Criando escalonador\n");
   init_escalonador();
-  printf("Criando Main Thread\n");
+  //printf("Criando Main Thread\n");
   Create_Main_Thread();
 }
 
@@ -210,7 +211,7 @@ int make_join(TCB_t *thread, TCB_t *tidThread)
 ///*************************************** Funcoes ******************************
 int ccreate(void *(*start)(void *), void *arg, int prio)
 {
-  printf("Iniciando teste ccreate...\n");
+  //printf("Iniciando teste ccreate...\n");
   // Crias as listas e a thread de start
   if (!filascriadas)
   {
@@ -226,7 +227,7 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
   ///tcb->context.uc_stack.ss_sp = stack_tcb;
   tcb->context.uc_stack.ss_sp = malloc(SIGSTKSZ);
   tcb->context.uc_stack.ss_size = SIGSTKSZ;
-  tcb->prio = 0;
+  tcb->prio = prio;
   tcb->bloqueando = NULL;
   makecontext(&(tcb->context), (void (*)(void))start, 1, arg);
 
@@ -234,13 +235,13 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
   // thread criada agora: prio = 0
   InsertByPrio(&aptos, tcb);
   ///AppendFila2(aptos, tcb);
-  printf("Thread criada, tid %d \n", tcb->tid);
+  //printf("Thread criada, tid %d \n", tcb->tid);
   return tcb->tid;
 }
 
 int cyield(void)
 {
-  printf("Iniciando yield \n");
+  //printf("Iniciando yield \n");
   clock_t termino;
   time(&termino);
   TCB_t *thread = thread_executando;
@@ -248,7 +249,7 @@ int cyield(void)
   thread->state = PROCST_APTO;
   InsertByPrio(&aptos, thread);
   thread_executando = NULL;
-  printf("Thread %d liberou a cpu\n", thread->tid);
+  //printf("Thread %d liberou a cpu\n", thread->tid);
 
   //escalonador();
   swapcontext(&thread->context, &escalonador);
@@ -296,9 +297,10 @@ int csem_init(csem_t *sem, int count)
   sem = (csem_t *)malloc(sizeof(csem_t));
   sem->fila = (PFILA2)malloc(sizeof(FILA2));
   sem->count = count;
-  printf("criando fila\n");
+  //printf("...%d",sem->count);
+  //printf("criando fila\n");
   CreateFila2(sem->fila);
-  printf("filacriada\n");
+  //printf("filacriada\n");
   if (sem->fila)
     return SUCESSO;
   return ERRO; //caso fila nao tenha sido alocada corretamente
@@ -306,7 +308,7 @@ int csem_init(csem_t *sem, int count)
 
 int cwait(csem_t *sem)
 {
-  printf("cwait\n");
+  //printf("cwait\n");
   if (sem->fila == NULL)
     return ERRO; // sem n foi inicializado
   if (sem->count > 0)
@@ -324,21 +326,23 @@ int cwait(csem_t *sem)
     thread_executando = NULL;
     //DeleteAtIteratorFila2(&executando);
     AppendFila2(&esperando, thread);
-    escalonadorupdate();
+    swapcontext(&thread->context, &escalonador);
   }
   return SUCESSO;
 }
 
 int csignal(csem_t *sem)
 {
- printf("csignal\n");
   if (sem->fila == NULL)
     return ERRO;
   if (FirstFila2(sem->fila) == 0)
-  { // fila nao vazia
+  { // fila nao vazia'		
     TCB_t *thread = GetAtIteratorFila2(sem->fila);
+    if(thread){
+    return ERRO;
+    }
+     //printf("%d\n",thread->tid);
     DeleteAtIteratorFila2(sem->fila);
-
     FirstFila2(&esperando);
     TCB_t *tcb = (TCB_t *) GetAtIteratorFila2(&esperando);
     do

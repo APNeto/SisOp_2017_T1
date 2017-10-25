@@ -4,8 +4,11 @@
 int main(int argc, char *argv[]) {
     csem_t* sem;
     csem_init(sem, 5);
+   
+cwait(sem);
+ csignal(sem);
+
     
-    //csignal(sem);
     
-    //cwait(sem);
+    
 }
